@@ -1,0 +1,34 @@
+/* #red { background:url(https://wowsport-152717.appspot.com/src/gif/1.gif); }
+#blue { background:url(https://wowsport-152717.appspot.com/src/gif/701.gif); }
+#green { background:url(https://wowsport-152717.appspot.com/src/gif/180.gif); }
+#black { background:url(https://wowsport-152717.appspot.com/src/gif/286.gif); } */
+
+#yellow { background-color:yellow; }
+#red { background-color:red; }
+#blue { background-color:blue; }
+#green { background-color:green; }
+#black { background-color:black; } 
+
+/* .unselectable {
+   user-select: none;
+} */
+
+#section>div { 
+    width:200px; height:200px; display:block; float:left;
+    }
+
+/*#section { width:4000px;}*/
+
+#wrapper { position:relative; height:100%;
+    overflow: hidden; touch-action: manipulation;}
+
+#outsideContainer { height:300px; width:80%;position:absolute; top:50%; left:50%; transform:translate(-50%,-50%)}
+/* section {
+  animation: moveSlideshow 1s linear infinite;
+}
+
+@keyframes moveSlideshow {
+  100% { 
+    transform: translateX(-66.6666%);  
+  }
+} */
