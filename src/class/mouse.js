@@ -24,7 +24,6 @@ export default class Mouse{
 //        window.removeEventListener('mouseleave',Mouse.desist);
         this.desistPos = {x:e.clientX,y:e.clientY};
         this.onResolve();
-        console.log(this);
     }
 
 }

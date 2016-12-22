@@ -7,7 +7,6 @@ export default class Carousel {
         this.initiatePos = {x:0,y:0};
         this.actingPos = {x:0,y:0};
         this.desistPos = {x:0,y:0};
-        this.staticPos = {x:0,y:0};
         //parent to the container,places outside  
         this.contRect = this.container.getBoundingClientRect();
         this.parentRect = this.container.parentNode.getBoundingClientRect();
@@ -25,6 +24,10 @@ export default class Carousel {
             margin: 0,
         };
         this.fakeBlock = 0;
+        this.leadingBlock = 0;
+        this.pressing = false;
+        this.slideDelay = 5000;
+        this.transDuration = 500;
     }
 
     start(){
@@ -42,11 +45,14 @@ export default class Carousel {
     }
 
     _inputHandle(e) {
+        clearTimeout(this._endTimer);
+        clearInterval(this.slideTimer);
         if(typeof e.targetTouches != 'undefined'){
             Touch.down.call(this,e);
         }else{
             Mouse.down.call(this,e);
         }
+        this.pressing = true;
         this.container.style.transitionDuration = "0s";
         this.contRect = this.container.getBoundingClientRect();
         this.parentRect = this.container.parentNode.getBoundingClientRect();
@@ -63,36 +69,61 @@ export default class Carousel {
     _swiping() {
 
         this.animationLoop = requestAnimationFrame(this._swiping.bind(this));
-        this.container.style.transform = `translate3d(${this.actingPos.x-this.distance}px, 0, 0)`;
-        console.log('leftLimit:',this.container.parentNode.getBoundingClientRect().left-this.container.getBoundingClientRect().left);
-        console.log('rightLimit:',this.container.getBoundingClientRect().right-this.container.parentNode.getBoundingClientRect().right);
+        this._moveBlock(this.actingPos.x-this.distance);
+        this._circling();
+        this.desitPromise.then(()=>{this._end();});
+    }
+
+    _circling(isSwiping=false) {
         if((this.container.parentNode.getBoundingClientRect().left-this.container.getBoundingClientRect().left)<= this.nodeOuterWidth){
-//            this.distance += this.contRect.width/2-(this.nodeOuterWidth-this.singleBlock.margin);
-            this.distance += this.nodeOuterWidth*this.origNodesCount;
+                this.distance += this.nodeOuterWidth*this.origNodesCount;
         }
         if((this.container.getBoundingClientRect().right-this.container.parentNode.getBoundingClientRect().right)<= this.nodeOuterWidth){
-//            this.distance += -this.contRect.width/2+(this.nodeOuterWidth-this.singleBlock.margin);
-            this.distance += -this.nodeOuterWidth*this.origNodesCount;
+                this.distance += -this.nodeOuterWidth*this.origNodesCount;
         }
-        console.log(this.distance);
-        this.desitPromise.then(()=>{this._end();});
+    }
+
+    _circleWithBlock() {
+        if(this.leadingBlock<=1){
+            this.container.style.transitionDuration = "0s"
+            this.leadingBlock += this.origNodesCount;
+            this._staticBlock();
+        }
+        if(this.leadingBlock>=this.nodesArr.length-this.origNodesCount){
+            this.container.style.transitionDuration = "0s"
+            this.leadingBlock += -this.origNodesCount;
+            this._staticBlock();
+        }
     }
 
     _end() {
         cancelAnimationFrame(this.animationLoop);
-        this.container.style.transitionDuration = "0.5s";
-        this.staticPos = (Math.round((this.actingPos.x-this.distance) / this.nodeOuterWidth) * this.nodeOuterWidth);
-        this.container.style.transform = `translate3d(${this.staticPos}px, 0, 0)`;
+        this.container.style.transitionDuration = this.transDuration+"ms";
+        this.leadingBlock = Math.round((this.actingPos.x-this.distance) / this.nodeOuterWidth)*-1;
+        this._staticBlock();
+        if(this.slideRestart === true) {
+            clearTimeout(this._endTimer);
+            this._endTimer = setTimeout(()=> this.slide() ,100);
+        }
+        this.pressing = false;
+    }
 
+    _staticBlock() {
+        this._moveBlock(this.leadingBlock*-this.nodeOuterWidth);
+    }
+
+    _moveBlock(x) {
+        this.container.style.transform = `translate3d(${x}px, 0, 0)`;
     }
 
     _initiate() {
-
-        this.nodesArr = this.container.querySelectorAll('div');
+        this.container.parentNode.style.touchAction = 'none';
+        this.container.parentNode.style.overflow = 'hidden';
+        this.nodesArr = this.container.querySelectorAll('.carousel_slide');
         this.origNodesCount = this.nodesArr.length;
         this._resize.apply(this);
-        this.staticPos = -this.nodeOuterWidth*(Math.floor(this.nodesArr.length/2)+1);
-        this.container.style.transform = `translate3d(${this.staticPos}px, 0, 0)`;
+        this.leadingBlock = (Math.floor(this.nodesArr.length/2)+1);
+        this._staticBlock();
         let lenI = Math.floor(this.nodesArr.length/2);
         for(let i=0;i<=lenI;i++){
             this.container.appendChild(this.nodesArr[i].cloneNode(true));
@@ -100,6 +131,7 @@ export default class Carousel {
         for(let j=this.nodesArr.length-1;j>=lenI;j--){
             this.container.insertBefore(this.nodesArr[j].cloneNode(true),this.container.firstElementChild);
         }
+        this.nodesArr = this.container.querySelectorAll('.carousel_slide');
 
     }
 
@@ -110,20 +142,60 @@ export default class Carousel {
 
         this.singleBlock.width = (this.parentRect.width/this.singleBlock.perScreen)-this.singleBlock.margin*2;
 
-        this.nodesArr = this.container.querySelectorAll('div');
         this.container.style.width = ((this.singleBlock.width+this.singleBlock.margin)*(this.origNodesCount+1)*2)+'px';
         this.container.style.height = '100%';
 
 
-        for(let node of this.nodesArr) {
-            node.style.width = this.singleBlock.width+'px';
-            node.style.height = '100%';
-            node.style.margin  = '0 '+this.singleBlock.margin+'px';
+//        for(let node of this.nodesArr) {
+        for(let i=0,lenI=this.nodesArr.length;i<lenI;i++){
+            this.nodesArr[i].style.display = 'block';
+            this.nodesArr[i].style.float = 'left';
+            this.nodesArr[i].style.width = this.singleBlock.width+'px';
+            this.nodesArr[i].style.height = '100%';
+            this.nodesArr[i].style.margin  = '0 '+this.singleBlock.margin+'px';
         }
         this.nodeOuterWidth = this.singleBlock.width+(this.singleBlock.margin*2);
-        this.staticPos = (Math.round(this.staticPos / this.nodeOuterWidth) * this.nodeOuterWidth);
-        this.container.style.transform = `translate3d(${this.staticPos}px, 0, 0)`;
-        
+        this._staticBlock();
+    }
+
+    slide(restart=true) {
+        this.slideRestart = restart;
+        this.slideTimer = setInterval(()=>{
+            this.leadingBlock++;
+            this.container.style.transitionDuration = this.transDuration+"ms";
+            this._staticBlock();
+
+            setTimeout(()=>{
+                        this._circleWithBlock();
+            },this.transDuration);
+        },2500);
+        return this;
+    }
+
+    prevBtn() {
+        if(this.pressing===false){
+            this.pressing=true;
+            this.leadingBlock--;
+            this.container.style.transitionDuration = this.transDuration+"ms";
+            this._staticBlock();
+            setTimeout(()=>{
+                this._circleWithBlock();
+                this.pressing=false;
+            },500);
+        }
+    }
+
+    nextBtn() {
+        if(this.pressing===false){
+            this.pressing=true;
+            this.leadingBlock++;
+            this.container.style.transitionDuration = this.transDuration+"ms";
+            this._staticBlock();
+            setTimeout(()=>{
+                this._circleWithBlock();
+                this.pressing=false;
+            },500);
+        }
     }
 
     block(num) {
