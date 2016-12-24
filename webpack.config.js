@@ -1,4 +1,5 @@
 var path = require('path');
+var webpack = require('webpack');
 
 module.exports = {
     context: path.join(__dirname, "/src"),
@@ -18,5 +19,10 @@ module.exports = {
     output: {
         path: __dirname,
         filename: "swipe.min.js"
-    }
+    },
+    // plugins: [
+    //     new webpack.optimize.DedupePlugin(),
+    //     new webpack.optimize.OccurenceOrderPlugin(),
+    //     new webpack.optimize.UglifyJsPlugin({ mangle: false, sourcemap: false}),
+    // ]
 }

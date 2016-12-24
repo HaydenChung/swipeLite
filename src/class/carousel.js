@@ -76,20 +76,20 @@ export default class Carousel {
 
     _circling(isSwiping=false) {
         if((this.container.parentNode.getBoundingClientRect().left-this.container.getBoundingClientRect().left)<= this.nodeOuterWidth){
-                this.distance += this.nodeOuterWidth*this.origNodesCount;
+                this.distance += this.nodeOuterWidth*(this.origNodesCount);
         }
         if((this.container.getBoundingClientRect().right-this.container.parentNode.getBoundingClientRect().right)<= this.nodeOuterWidth){
-                this.distance += -this.nodeOuterWidth*this.origNodesCount;
+                this.distance += -this.nodeOuterWidth*(this.origNodesCount);
         }
     }
 
     _circleWithBlock() {
-        if(this.leadingBlock<=1){
+        if(this.leadingBlock<= 1){
             this.container.style.transitionDuration = "0s"
             this.leadingBlock += this.origNodesCount;
             this._staticBlock();
         }
-        if(this.leadingBlock>=this.nodesArr.length-this.origNodesCount){
+        if(this.leadingBlock>= this.nodesArr.length-this.singleBlock.perScreen){
             this.container.style.transitionDuration = "0s"
             this.leadingBlock += -this.origNodesCount;
             this._staticBlock();
@@ -121,14 +121,16 @@ export default class Carousel {
         this.container.parentNode.style.overflow = 'hidden';
         this.nodesArr = this.container.querySelectorAll('.carousel_slide');
         this.origNodesCount = this.nodesArr.length;
+        this.fakeBlock = Math.ceil(this.singleBlock.perScreen/2)+1;
         this._resize.apply(this);
         this.leadingBlock = (Math.floor(this.nodesArr.length/2)+1);
         this._staticBlock();
-        let lenI = Math.floor(this.nodesArr.length/2);
-        for(let i=0;i<=lenI;i++){
-            this.container.appendChild(this.nodesArr[i].cloneNode(true));
+        for(let i=0,j=0;i<this.fakeBlock;i++,j++){
+            if(typeof this.nodesArr[j] === 'undefined') j=0;
+            this.container.appendChild(this.nodesArr[j].cloneNode(true));
         }
-        for(let j=this.nodesArr.length-1;j>=lenI;j--){
+        for(let i=this.nodesArr.length-1,j=this.nodesArr.length-1;i>=this.nodesArr.length-this.fakeBlock;i--,j--){
+            if(typeof this.nodesArr[j] === 'undefined') j=this.nodesArr.length-1;
             this.container.insertBefore(this.nodesArr[j].cloneNode(true),this.container.firstElementChild);
         }
         this.nodesArr = this.container.querySelectorAll('.carousel_slide');
@@ -141,12 +143,9 @@ export default class Carousel {
         this.nodeRect = this.container.children[0].getBoundingClientRect();
 
         this.singleBlock.width = (this.parentRect.width/this.singleBlock.perScreen)-this.singleBlock.margin*2;
-
-        this.container.style.width = ((this.singleBlock.width+this.singleBlock.margin)*(this.origNodesCount+1)*2)+'px';
+        this.container.style.width = ((this.singleBlock.width+this.singleBlock.margin)*((this.origNodesCount+1)+(this.fakeBlock*2)))+'px';
         this.container.style.height = '100%';
 
-
-//        for(let node of this.nodesArr) {
         for(let i=0,lenI=this.nodesArr.length;i<lenI;i++){
             this.nodesArr[i].style.display = 'block';
             this.nodesArr[i].style.float = 'left';
@@ -160,6 +159,7 @@ export default class Carousel {
 
     slide(restart=true) {
         this.slideRestart = restart;
+        this.stopSlide();
         this.slideTimer = setInterval(()=>{
             this.leadingBlock++;
             this.container.style.transitionDuration = this.transDuration+"ms";
@@ -172,21 +172,30 @@ export default class Carousel {
         return this;
     }
 
+    stopSlide() {
+        clearInterval(this.slideTimer);
+    }
+
     prevBtn() {
         if(this.pressing===false){
             this.pressing=true;
+            this.stopSlide();
             this.leadingBlock--;
             this.container.style.transitionDuration = this.transDuration+"ms";
             this._staticBlock();
             setTimeout(()=>{
                 this._circleWithBlock();
                 this.pressing=false;
-            },500);
+                if(this.slideRestart === true){
+                    this.slide();
+                }
+            },this.transDuration);
         }
     }
 
     nextBtn() {
         if(this.pressing===false){
+            this.stopSlide();
             this.pressing=true;
             this.leadingBlock++;
             this.container.style.transitionDuration = this.transDuration+"ms";
@@ -194,7 +203,10 @@ export default class Carousel {
             setTimeout(()=>{
                 this._circleWithBlock();
                 this.pressing=false;
-            },500);
+                if(this.slideRestart === true){
+                    this.slide();
+                }
+            },this.transDuration);
         }
     }
 

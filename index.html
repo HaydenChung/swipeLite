@@ -3,6 +3,9 @@
 <head>
     <link rel="stylesheet" type="text/css" href="./general.css">
     <title>swipe Sample</title>
+    <style>
+    .arrow { position:absolute; top:50%; z-index:999; font-size:5vw; color:lightgray; cursor:pointer;}
+    </style>
 </head>
 <body>
     <div id=outsideContainer>
@@ -18,8 +21,8 @@
             </div>
         </div>
 
-        <span id=prevBtn></span>
-        <span id=nextBtn></span>
+        <span class='arrow' id=prevBtn style="left:1vw;">&#8678</span>
+        <span class='arrow' id=nextBtn style="right:1vw;">&#8680</span>
 
         <span id=clickstart></span>
         <span id=clickmove></span>
